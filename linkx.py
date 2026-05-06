@@ -730,6 +730,7 @@ def classify_ip(ip: str) -> tuple:
     if ip.startswith("172.20.10."):   return "iPhone hotspot",    False
     if ip.startswith("192.168.137."): return "Windows hotspot",   False
     if ip.startswith("192.168.92."):  return "VMware NAT",        True
+    if ip.startswith("192.168.122."): return "VMware default",    True
     if ip.startswith("192.168.157."): return "VMware Host-only",  True
     if ip.startswith("192.168.56."):  return "VirtualBox",        True
     if ip.startswith("169.254."):     return "Link-local",        True
@@ -1005,24 +1006,44 @@ def _rename_key_locally(old_kpath: str, this_name: str, remote_name: str,
     old_meta = _meta_path(old_kpath)
     new_meta = _meta_path(new_path)
 
+    # Resolve real absolute paths — Termux uses symlinks so ~/.ssh and
+    # /data/data/com.termux/files/home/.ssh are the same dir but
+    # os.rename treats different string forms as different paths
+    old_kpath_r = os.path.realpath(os.path.expanduser(old_kpath))
+    new_path_r  = os.path.realpath(os.path.expanduser(new_path))
+    old_pub     = old_kpath_r + ".pub"
+    new_pub     = new_path_r  + ".pub"
+    old_meta    = _meta_path(old_kpath_r)
+    new_meta    = _meta_path(new_path_r)
+
+    # Resolve real absolute paths — Termux ~/.ssh and full path are same
+    # dir but different strings causing FileNotFoundError on os.rename
+    old_kpath_r = os.path.realpath(os.path.expanduser(old_kpath))
+    new_path_r  = os.path.realpath(os.path.expanduser(new_path))
+    old_pub     = old_kpath_r + ".pub"
+    new_pub     = new_path_r  + ".pub"
+    old_meta    = _meta_path(old_kpath_r)
+    new_meta    = _meta_path(new_path_r)
+
     # Don't rename if already has this name
-    if old_kpath == new_path:
-        _write_key_meta(new_path, this_name, remote_name, device_id)
-        return new_path
+    if old_kpath_r == new_path_r:
+        _write_key_meta(new_path_r, this_name, remote_name, device_id)
+        return new_path_r
 
     try:
-        # Remove existing targets if present (re-naming same relation)
-        for p in (new_path, new_pub, new_meta):
+        for p in (new_path_r, new_pub, new_meta):
             if os.path.exists(p):
                 os.remove(p)
-        os.rename(old_kpath, new_path)
+        os.rename(old_kpath_r, new_path_r)
         if os.path.exists(old_pub):
             os.rename(old_pub, new_pub)
         if os.path.exists(old_meta):
             os.rename(old_meta, new_meta)
     except Exception as e:
         warn(f"Could not rename key file: {e}")
-        return old_kpath
+        return old_kpath_r
+
+    new_path = new_path_r
 
     # Write the sidecar — private key file is left completely untouched
     _write_key_meta(new_path, this_name, remote_name, device_id)
@@ -7178,10 +7199,17 @@ def _install_pub_key_locally(pub_key: str):
         _win_fix_sshd_config(programdata)
 
 def _get_all_subnet_ips() -> list:
-    """Return all IPs to scan for pairing (same as scan_network logic)."""
-    my_ips   = set(get_all_local_ips())
+    """
+    Return all IPs to scan for pairing.
+    Includes local subnets AND extra hotspot/bridged subnets so that
+    a VMware bridged VM on 192.168.122.x can still find a phone on
+    192.168.43.x via the gateway bridge.
+    """
+    my_ips   = get_all_local_ips()
+    my_ips_s = set(my_ips)
     seen_pfx = set()
     result   = []
+
     for ip in my_ips:
         if ip.startswith("169.254.") or ip.startswith("127."): continue
         pfx = ".".join(ip.split(".")[:3])
@@ -7189,8 +7217,15 @@ def _get_all_subnet_ips() -> list:
         seen_pfx.add(pfx)
         for i in range(1, 255):
             candidate = f"{pfx}.{i}"
-            if candidate not in my_ips:
+            if candidate not in my_ips_s:
                 result.append(candidate)
+
+    for _gw, pfx in _extra_hotspot_subnets(my_ips):
+        if pfx in seen_pfx: continue
+        seen_pfx.add(pfx)
+        for i in range(1, 255):
+            result.append(f"{pfx}.{i}")
+
     return result
 
 def menu_pair(hosts: dict) -> dict:
@@ -7198,21 +7233,39 @@ def menu_pair(hosts: dict) -> dict:
     pr()
     pr(f"  {C.B}How this works:{C.R}")
     pr(f"  Both devices run linkx.py and choose Pair.")
-    pr(f"  HOST starts SSH server + opens a pairing listener.")
-    pr(f"  CLIENT scans the LAN, finds HOST, confirms a PIN,")
-    pr(f"  installs keys in both directions — done in seconds.")
-    pr(f"  No IP entry. No manual config. Passwords never again.")
+    pr(f"  Both devices start SSH server first.")
+    pr(f"  HOST opens a pairing listener, CLIENT scans and finds it,")
+    pr(f"  confirms a PIN, both enter each other's password once,")
+    pr(f"  keys installed both ways — no passwords ever again.")
+    pr()
+    sep()
+
+    # ── Start SSH server on THIS device before role selection ─────────
+    # Both HOST and CLIENT need SSH server running for two-way connection.
+    pr(f"  {C.D}Starting SSH server on this device...{C.R}")
+    sshd_ok, my_ssh_port, sshd_msg = _start_sshd()
+    if sshd_ok:
+        ok(f"SSH server ready on port {my_ssh_port}")
+    else:
+        warn("SSH server could not start on this device.")
+        for line in sshd_msg.split("\n"):
+            pr(f"  {C.Y}{line}{C.R}")
+        pr()
+        pr(f"  {C.Y}The other device will NOT be able to connect to you.{C.R}")
+        pr(f"  {C.Y}You can still connect TO the other device (one-way).{C.R}")
+        if ask("Continue anyway?", "N").upper() != "Y":
+            return hosts
+
     pr()
     sep()
     pr(f"  {C.B}[1]{C.R}  HOST   — I am the device others connect TO")
-    pr(f"         {C.D}SSH server will start automatically{C.R}")
     pr(f"  {C.B}[2]{C.R}  CLIENT — I will find and connect to the HOST")
     pr()
     pr(f"  {C.B}[0]{C.R}  Back")
     sep()
     ch = ask("Choose")
-    if ch == "1": return _pair_as_host(hosts)
-    if ch == "2": return _pair_as_client(hosts)
+    if ch == "1": return _pair_as_host(hosts, my_ssh_port)
+    if ch == "2": return _pair_as_client(hosts, my_ssh_port)
     return hosts
 
 
@@ -7258,49 +7311,42 @@ def _win_remove_all_firewall_rules():
 _remove_icmp_firewall_rule = _win_remove_all_firewall_rules
 
 
-def _pair_as_host(hosts: dict) -> dict:
+def _pair_as_host(hosts: dict, my_ssh_port: int = 22) -> dict:
     """
-    HOST role — full sequence:
-      1. Auto-start SSH server (OS-aware command)
-      2. Generate pub key if needed
-      3. Open TCP listener on PAIR_PORT
-      4. Wait for CLIENT to connect → exchange info as JSON over TCP
-      5. Verify CLIENT's SSH key works back to us
-      6. Done — both keys installed, both devices registered
+    HOST role — two-way setup via pairing.
+    SSH server already started in menu_pair before we got here.
+    1. Generate fresh keypair specifically for this pairing session
+    2. Open TCP listener — send beacon with PIN and our info
+    3. Wait for CLIENT to connect and send client_hello
+    4. Extract CLIENT info from client_hello
+    5. Install CLIENT pub key locally (so CLIENT can SSH to us)
+    6. Generate fresh key for CLIENT using CLIENT device_id
+    7. Ask for CLIENT password — install our key on CLIENT via password SSH
+    8. Verify key works both ways
+    9. Save CLIENT to database
+    10. Naming ceremony
     """
-    clear(); hdr("PAIRING — HOST MODE", "Step 1: Starting SSH server...")
+    clear(); hdr("PAIRING — HOST MODE", "Preparing...")
     pr()
 
-    # ── 1. Start SSH server ───────────────────────────────────────────
-    sshd_ok, ssh_port, sshd_msg = _start_sshd()
-    if sshd_ok:
-        ok(sshd_msg)
-        pr(f"  {C.D}Listening on port {ssh_port}{C.R}")
-    else:
-        err("Could not start SSH server")
-        for line in sshd_msg.split("\n"):
-            pr(f"  {C.Y}{line}{C.R}")
-        pr(f"  Start SSH server manually then run Pair again.")
-        _remove_icmp_firewall_rule()
-        pause(); return hosts
+    ok(f"SSH server on port {my_ssh_port}")
 
-    # ── 2. Get/generate our pub key ───────────────────────────────────
     my_user = getpass.getuser()
     my_host = socket.gethostname()
-    pub_key = _my_pub_key()
-    if not pub_key:
-        pr(f"  {C.D}Generating SSH key...{C.R}")
-        my_did = make_device_id("", my_host, my_user)
-        kpath, pub_key = generate_key(my_did, my_host)
-        if not pub_key:
-            err("ssh-keygen failed"); pause(); return hosts
-        ok(f"Key ready: {os.path.basename(kpath)}")
 
-    token = _pair_token()
+    # Generate fresh keypair — named with session token for now,
+    # naming ceremony will rename to HostName_to_ClientName
+    pr(f"  {C.D}Generating fresh keypair for this pairing...{C.R}")
+    _session_token = _pair_token()
+    my_kp, pub_key = generate_key(_session_token, my_host)
+    if not pub_key:
+        err("ssh-keygen failed"); pause(); return hosts
+    ok(f"Keypair ready: {os.path.basename(my_kp)}")
+
+    token  = _pair_token()   # separate PIN token for the handshake
     my_ips = [ip for ip in get_all_local_ips()
               if not classify_ip(ip)[1] and not ip.startswith("127.")]
 
-    # ── 3. Open TCP pairing listener ─────────────────────────────────
     try:
         srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -7311,12 +7357,12 @@ def _pair_as_host(hosts: dict) -> dict:
         err(f"Cannot open pairing port {PAIR_PORT}: {e}")
         pause(); return hosts
 
-    clear(); hdr("PAIRING — HOST MODE", "Waiting for CLIENT to connect")
+    clear(); hdr("PAIRING — HOST MODE", "Waiting for CLIENT...")
     pr()
     pr(f"  {C.B}HOST info:{C.R}")
     pr(f"  Hostname : {C.G}{my_host}{C.R}")
     pr(f"  User     : {C.G}{my_user}{C.R}")
-    pr(f"  SSH port : {C.G}{ssh_port}{C.R}")
+    pr(f"  SSH port : {C.G}{my_ssh_port}{C.R}")
     for ip in my_ips:
         pr(f"  IP       : {C.G}{ip}{C.R}")
     pr()
@@ -7325,19 +7371,19 @@ def _pair_as_host(hosts: dict) -> dict:
     print(f"\n  {C.CY}╔{'═'*20}╗{C.R}")
     print(f"  {C.CY}║{C.R}   {C.B}{token}{C.R}   {C.CY}            ║{C.R}")
     print(f"  {C.CY}╚{'═'*20}╝{C.R}\n")
-    pr(f"  {C.D}Pairing server running on port {PAIR_PORT}...{C.R}")
-    pr(f"  {C.D}CLIENT is scanning the LAN to find us...{C.R}")
+    pr(f"  {C.D}CLIENT is scanning the LAN...{C.R}")
     pr(f"  {C.D}Ctrl+C to cancel{C.R}")
     sep()
 
-    result   = [None]
-    stop_srv = threading.Event()
+    result         = [None]
+    client_seen_at = [0.0]
+    stop_srv       = threading.Event()
 
     payload = json.dumps({
         "role"     : "host_hello",
         "hostname" : my_host,
         "user"     : my_user,
-        "ssh_port" : ssh_port,
+        "ssh_port" : my_ssh_port,
         "pub_key"  : pub_key,
         "token"    : token,
     }).encode()
@@ -7346,30 +7392,32 @@ def _pair_as_host(hosts: dict) -> dict:
         while not stop_srv.is_set():
             try:
                 conn, addr = srv.accept()
-                # Send our info immediately
+                if not client_seen_at[0]:
+                    client_seen_at[0] = time.time()
                 conn.sendall(payload + b"\n")
-                # Receive client info
                 data = b""
-                conn.settimeout(10)
+                conn.settimeout(15)
                 try:
                     while b"\n" not in data:
                         chunk = conn.recv(4096)
                         if not chunk: break
                         data += chunk
-                        if len(data) > 65536:   # 64KB max — prevent OOM
-                            data = b""
-                            break
+                        if len(data) > 65536:
+                            data = b""; break
                 except Exception: pass
                 conn.close()
                 if data:
-                    msg = json.loads(data.strip())
-                    if msg.get("token") == token:
-                        result[0] = (addr[0], msg)
-                        stop_srv.set()
-            except socket.timeout:
-                continue
-            except Exception:
-                continue
+                    try:
+                        msg = json.loads(data.strip())
+                        # Only stop when CLIENT sends its actual registration
+                        # not on the first scan probe which sends nothing
+                        if (msg.get("token") == token
+                                and msg.get("role") == "client_hello"):
+                            result[0] = (addr[0], msg)
+                            stop_srv.set()
+                    except Exception: pass
+            except socket.timeout: continue
+            except Exception:      continue
         try: srv.close()
         except Exception: pass
 
@@ -7380,15 +7428,22 @@ def _pair_as_host(hosts: dict) -> dict:
     t0 = time.time(); i = 0
     try:
         while not stop_srv.is_set():
-            elapsed = int(time.time()-t0)
+            elapsed = int(time.time() - t0)
             print(f"\r  {C.CY}{spinner[i%len(spinner)]}{C.R}  "
                   f"Waiting for CLIENT...  {elapsed}s", end="", flush=True)
             i += 1
-            # Use short sleep increments so Ctrl+C is caught quickly on Windows
             for _ in range(6):
                 if stop_srv.is_set(): break
                 time.sleep(0.02)
-            if elapsed >= PAIR_TIMEOUT:
+            # Before CLIENT connects: PAIR_TIMEOUT from start
+            # After CLIENT connects: 120s more for password entry
+            if client_seen_at[0]:
+                if time.time() - client_seen_at[0] > 120:
+                    stop_srv.set()
+                    _remove_icmp_firewall_rule()
+                    print(f"\n"); warn("Timed out waiting for CLIENT registration.")
+                    pause(); return hosts
+            elif elapsed >= PAIR_TIMEOUT:
                 stop_srv.set()
                 _remove_icmp_firewall_rule()
                 print(f"\n"); warn("Timed out."); pause(); return hosts
@@ -7397,80 +7452,119 @@ def _pair_as_host(hosts: dict) -> dict:
         _remove_icmp_firewall_rule()
         print(f"\n  {C.D}Cancelled.{C.R}"); pause(); return hosts
 
-    stop_srv.set()
-    print(f"\n")
+    stop_srv.set(); print(f"\n")
 
     if not result[0]:
         _remove_icmp_firewall_rule()
         warn("No CLIENT connected."); pause(); return hosts
 
-    client_ip, msg = result[0]
-    client_user     = msg.get("user","")
-    client_host     = msg.get("hostname","")
+    client_ip, msg  = result[0]
+    client_user     = msg.get("user", "")
+    client_host     = msg.get("hostname", "")
     client_ssh_port = msg.get("ssh_port", 22)
-    client_pub_key  = msg.get("pub_key","")
+    client_pub_key  = msg.get("pub_key", "")
+    client_os       = msg.get("os_type", "")
 
-    ok(f"CLIENT connected: {client_user}@{client_ip}")
+    ok(f"CLIENT found: {client_user}@{client_ip}")
 
-    # Install client's key so they can SSH to us
+    # Detect CLIENT OS if not sent
+    if not client_os:
+        if client_ssh_port == 8022:
+            client_os = "android"
+        elif "windows" in client_host.lower():
+            client_os = "windows"
+        else:
+            client_os = "linux"
+
+    # Install CLIENT pub key locally so CLIENT can SSH to us
     if client_pub_key:
         _install_pub_key_locally(client_pub_key)
-        ok(f"CLIENT key installed — {client_user}@{client_ip} can now SSH here ✓")
+        ok(f"CLIENT key installed — {client_user}@{client_ip} can SSH here ✓")
+    else:
+        warn("CLIENT sent no public key")
 
-    # Register client device
+    # Build CLIENT device identity
     mac = get_mac(client_ip)
     did = make_device_id(mac, client_host, client_user)
 
-    # Find the key we generated for this device (the one whose public
-    # half was just installed on the client).  We need to save the
-    # device_id → key_path mapping so scan can re-identify this device
-    # by key when its IP or MAC changes (Android randomizes MAC).
-    our_kp        = ""
-    existing_keys = _find_existing_keys()   # defined here so always in scope
-    for k in existing_keys:
-        if test_key(client_ip, client_user, client_ssh_port, k):
-            our_kp = k
-            break
-    if our_kp:
-        save_key(did, our_kp)
-        ok(f"Key verified and saved for {client_user}@{client_ip} ✓")
+    # Rename fresh key to be tied to this CLIENT's device_id
+    _kp_named = os.path.join(
+        _ssh_dir(), f"id_ed25519_{did[:8]}")
+    try:
+        _kp_r = os.path.realpath(os.path.expanduser(my_kp))
+        if _kp_r != os.path.realpath(os.path.expanduser(_kp_named)):
+            for _old in (_kp_named, _kp_named + ".pub"):
+                if os.path.exists(_old): os.remove(_old)
+            os.rename(_kp_r, _kp_named)
+            _pub_r = _kp_r + ".pub"
+            if os.path.exists(_pub_r):
+                os.rename(_pub_r, _kp_named + ".pub")
+            my_kp = _kp_named
+    except Exception:
+        pass  # naming ceremony will rename it properly
+
+    # Now HOST must install ITS key onto CLIENT via password SSH
+    # This is the two-way part — exactly like Setup but from HOST to CLIENT
+    sep()
+    pr(f"  {C.B}Two-way setup:{C.R} Installing HOST key on CLIENT")
+    pr(f"  {C.Y}Enter the password of {client_user}@{client_ip}{C.R}")
+    pr(f"  {C.G}This is the only password you will ever need for this device.{C.R}")
+    pr()
+
+    # Read our pub key to install on CLIENT
+    _my_pub_for_client = ""
+    try:
+        _my_pub_for_client = open(my_kp + ".pub").read().strip()
+    except Exception:
+        pass
+
+    _host_install_ok = False
+    if _my_pub_for_client:
+        _host_install_ok = _install_key_interactive(
+            client_ip, client_user, client_ssh_port,
+            _my_pub_for_client, os_type=client_os)
+        if _host_install_ok:
+            ok(f"HOST key installed on CLIENT — HOST can reach CLIENT ✓")
+        else:
+            warn("Could not install HOST key on CLIENT — one-way only")
     else:
-        # Key install succeeded (client confirmed) but we can't verify
-        # yet — client's sshd may have a short startup delay.
-        # Save any existing key we have so at least the DB entry exists.
-        if existing_keys:
-            save_key(did, existing_keys[0])
-        warn("Key saved but could not verify yet — try Transfer → Setup if needed")
+        warn("No pub key to install on CLIENT")
+
+    save_key(did, my_kp)
 
     new_host = {
-        "ip"        : client_ip,
-        "hostname"  : client_host,
-        "mac"       : mac,
-        "ssh_port"  : client_ssh_port,
-        "os_type"   : "other",
-        "user"      : client_user,
-        "device_id" : did,
-        "key_source": our_kp or (existing_keys[0] if not our_kp and existing_keys else ""),
-        "key_ok"    : bool(our_kp),
-        "mac_randomized": True,   # Android always randomizes MAC
-        "seen_at"   : time.time(),
+        "ip"            : client_ip,
+        "hostname"      : client_host,
+        "mac"           : mac,
+        "ssh_port"      : client_ssh_port,
+        "os_type"       : client_os,
+        "user"          : client_user,
+        "device_id"     : did,
+        "key_source"    : os.path.basename(my_kp),
+        "key_ok"        : True,
+        "mac_randomized": client_os in MAC_RANDOMIZED_OS,
+        "seen_at"       : time.time(),
     }
     hosts[client_ip] = new_host
     save_hosts(hosts)
+    _remove_icmp_firewall_rule()
 
     ok("HOST pairing complete!")
     pr(f"  {C.G}✓{C.R}  CLIENT can SSH to us")
-    pr(f"  {C.G}✓{C.R}  We can SSH to CLIENT (key installed)")
-    pr(f"  {C.D}Run Transfer → Setup to verify the connection.{C.R}")
-    _remove_icmp_firewall_rule()
-    pr(f"  {C.D}(Temporary ICMP/ping firewall rule removed — SSH rule kept){C.R}")
+    pr(f"  {C.G}✓{C.R}  We can SSH to CLIENT" if _host_install_ok
+       else f"  {C.Y}✗{C.R}  We cannot SSH to CLIENT (key install failed)")
 
-    # ── Naming ceremony ───────────────────────────────────────────────
-    if our_kp and os.path.exists(our_kp):
+    # Naming ceremony
+    # is_pair=False — CLIENT has just had its SSH key installed so we
+    # CAN rename the remote key if _host_install_ok, but _name_connection
+    # with is_pair=True will try to do that automatically
+    _my_kp_r = os.path.realpath(os.path.expanduser(my_kp))
+    if os.path.exists(_my_kp_r):
         kp_after, new_host = _name_connection(
-            new_host, our_kp, hosts,
+            new_host, _my_kp_r, hosts,
             remote_ip=client_ip, remote_user=client_user,
-            remote_port=client_ssh_port, is_pair=True)
+            remote_port=client_ssh_port,
+            is_pair=_host_install_ok)
         hosts[client_ip] = new_host
         save_hosts(hosts)
     else:
@@ -7479,10 +7573,13 @@ def _pair_as_host(hosts: dict) -> dict:
 
 
 def _probe_pair_port(ip: str) -> bool:
-    """Quick TCP probe for the pairing port."""
+    """Quick TCP probe for the pairing port.
+    Uses 1.5s timeout — longer than FAST_PROBE_TIMEOUT because VMware
+    bridged networks have higher latency than direct LAN connections.
+    """
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(FAST_PROBE_TIMEOUT)
+        s.settimeout(1.5)
         result = s.connect_ex((ip, PAIR_PORT)) == 0
         s.close()
         return result
@@ -7490,26 +7587,31 @@ def _probe_pair_port(ip: str) -> bool:
         return False
 
 
-def _pair_as_client(hosts: dict) -> dict:
+def _pair_as_client(hosts: dict, my_ssh_port: int = 22) -> dict:
     """
-    CLIENT role — full sequence:
-      1. Scan every IP on every local subnet for PAIR_PORT (parallel, fast)
-      2. Connect to first HOST found → exchange JSON info over TCP
-      3. User confirms PIN matches HOST screen
-      4. Install HOST pub key locally
-      5. Connect via password SSH to HOST → install our key there
-      6. Send our info back so HOST registers us
-      7. Both devices fully paired
+    CLIENT role — two-way setup via pairing.
+    SSH server already started in menu_pair before we got here.
+    1. Scan LAN for HOST on PAIR_PORT
+    2. Read HOST beacon — get PIN and HOST info
+    3. User confirms PIN
+    4. Generate fresh keypair for HOST
+    5. Send client_hello to HOST immediately (while HOST listener is alive)
+    6. Install our key on HOST via password SSH (one password entry)
+    7. Install HOST pub key locally
+    8. Verify key works against HOST
+    9. Save HOST to database
+    10. Naming ceremony
     """
     clear(); hdr("PAIRING — CLIENT MODE", "Scanning LAN for HOST...")
     pr()
 
-    my_ips = get_all_local_ips()
+    my_user = getpass.getuser()
+    my_host = socket.gethostname()
+    my_los  = local_os()
+
     scan_candidates = _get_all_subnet_ips()
     total = len(scan_candidates)
-
-    pr(f"  {C.D}Scanning {total} IPs for pairing server on port {PAIR_PORT}...{C.R}")
-    pr(f"  {C.D}This finds the HOST in seconds — no IP needed.{C.R}")
+    pr(f"  {C.D}Scanning {total} IPs on port {PAIR_PORT}...{C.R}")
     pr(f"  {C.D}Ctrl+C to cancel{C.R}")
     sep()
 
@@ -7521,7 +7623,6 @@ def _pair_as_client(hosts: dict) -> dict:
     def _scan_one(ip):
         if stop_scan.is_set(): return
         if _probe_pair_port(ip):
-            # Connect and get HOST info
             try:
                 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 conn.settimeout(5)
@@ -7554,9 +7655,9 @@ def _pair_as_client(hosts: dict) -> dict:
             futs = [ex.submit(_scan_one, ip) for ip in scan_candidates]
             try:
                 while not stop_scan.is_set():
-                    done = scanned[0]
-                    pct  = int(done * 100 / total) if total else 100
-                    elapsed = int(time.time()-t0)
+                    done    = scanned[0]
+                    pct     = int(done * 100 / total) if total else 100
+                    elapsed = int(time.time() - t0)
                     print(f"\r  {C.CY}{spinner[i%len(spinner)]}{C.R}  "
                           f"Scanning {done}/{total} ({pct}%)...  {elapsed}s",
                           end="", flush=True)
@@ -7566,25 +7667,23 @@ def _pair_as_client(hosts: dict) -> dict:
                 stop_scan.set()
                 for f2 in futs: f2.cancel()
                 print(f"\n  {C.D}Cancelled.{C.R}"); pause(); return hosts
-    except Exception:
-        pass
+    except Exception: pass
 
-    stop_scan.set()
-    print(f"\n")
+    stop_scan.set(); print(f"\n")
 
     if not found_host[0]:
         err("No HOST found on this network.")
-        pr(f"  Make sure the other device has chosen HOST mode first.")
+        pr(f"  Make sure the other device chose HOST mode first.")
         pause(); return hosts
 
     host_ip, beacon = found_host[0]
-    host_user    = beacon.get("user","")
-    host_host    = beacon.get("hostname","")
-    host_port    = beacon.get("ssh_port", 22)
-    host_pub_key = beacon.get("pub_key","")
-    token        = beacon.get("token","")
+    host_user       = beacon.get("user", "")
+    host_host       = beacon.get("hostname", "")
+    host_port       = beacon.get("ssh_port", 22)
+    host_pub_key    = beacon.get("pub_key", "")
+    token           = beacon.get("token", "")
 
-    # Show beacon info + PIN confirmation
+    # PIN confirmation
     clear(); hdr("PAIRING — CLIENT MODE", f"HOST found: {host_host}")
     pr()
     pr(f"  {C.B}HOST device:{C.R}")
@@ -7602,107 +7701,113 @@ def _pair_as_client(hosts: dict) -> dict:
     pr(f"  {C.B}[Y]{C.R}  PIN matches — pair now")
     pr(f"  {C.B}[N]{C.R}  Wrong device — cancel")
     sep()
-    if ask("PIN confirmed?","Y").upper() != "Y":
+    if ask("PIN confirmed?", "Y").upper() != "Y":
         warn("Pairing cancelled."); pause(); return hosts
 
-    # Our identity
-    my_user = getpass.getuser()
-    my_host = socket.gethostname()
-    my_port = _detect_ssh_port()
-    my_pub  = _my_pub_key()
-    if not my_pub:
-        pr(f"  {C.D}Generating SSH key...{C.R}")
-        my_did  = make_device_id("", my_host, my_user)
-        kpath, my_pub = generate_key(my_did, my_host)
-        if not my_pub:
-            err("Key generation failed"); pause(); return hosts
-        ok(f"Key ready: {os.path.basename(kpath)}")
-
-    # ── Step 1: Install our key on HOST via password SSH ──────────────
-    pr()
-    pr(f"  {C.B}Step 1/3:{C.R} Installing our key on HOST")
-    pr(f"  {C.Y}SSH will ask for password of {host_user}@{host_ip}.{C.R}")
-    pr(f"  {C.G}This is the LAST time a password is needed.{C.R}\n")
-    # Infer host OS from beacon data — Windows detection from hostname hint
-    # or from stored host record if already known
-    _host_rec    = hosts.get(host_ip, {})
-    _host_os     = _host_rec.get("os_type", "")
+    # Detect HOST OS
+    _host_rec = hosts.get(host_ip, {})
+    _host_os  = _host_rec.get("os_type", "")
     if not _host_os:
-        if host_port == 8022:
-            _host_os = "android"
-        elif "windows" in host_host.lower() or "desktop" in host_host.lower() or "laptop" in host_host.lower():
-            _host_os = "windows"  # best guess — user can correct via Setup
-        else:
-            _host_os = "linux"
-    if not _install_key_interactive(host_ip, host_user, host_port, my_pub, os_type=_host_os):
-        err("Key install failed — check username and password.")
-        pause(); return hosts
-    ok("Our key installed on HOST ✓")
+        if host_port == 8022:         _host_os = "android"
+        elif "windows" in host_host.lower(): _host_os = "windows"
+        else:                          _host_os = "linux"
 
-    # ── Step 2: Install HOST pub key locally ──────────────────────────
+    # Generate fresh keypair specifically for HOST
+    host_mac = get_mac(host_ip)
+    did      = make_device_id(host_mac, host_host, host_user)
     pr()
-    pr(f"  {C.B}Step 2/3:{C.R} Installing HOST key locally")
-    if host_pub_key:
-        _install_pub_key_locally(host_pub_key)
-        ok("HOST key installed locally ✓")
-    else:
-        warn("HOST sent no public key — only one-way auth possible")
+    pr(f"  {C.D}Generating fresh keypair for this pairing...{C.R}")
+    my_kp, my_pub = generate_key(did, host_host)
+    if not my_pub:
+        err("Key generation failed"); pause(); return hosts
+    ok(f"Keypair ready: {os.path.basename(my_kp)}")
 
-    # ── Step 3: Send our info back to HOST via TCP pairing port ───────
+    # Send client_hello to HOST NOW — while HOST listener is still alive
+    # Must happen BEFORE password step which takes 10-40 seconds
     pr()
-    pr(f"  {C.B}Step 3/3:{C.R} Registering with HOST")
+    pr(f"  {C.D}Registering with HOST...{C.R}")
     reply = json.dumps({
         "role"     : "client_hello",
         "hostname" : my_host,
         "user"     : my_user,
-        "ssh_port" : my_port,
+        "ssh_port" : my_ssh_port,
         "pub_key"  : my_pub,
+        "os_type"  : my_los,
         "token"    : token,
     }).encode() + b"\n"
-    try:
-        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conn.settimeout(8)
-        conn.connect((host_ip, PAIR_PORT))
-        # Read HOST hello (discard — we already have it)
-        try:
-            d = b""
-            while b"\n" not in d:
-                c = conn.recv(4096)
-                if not c: break
-                d += c
-        except Exception: pass
-        conn.sendall(reply)
-        conn.close()
-        ok("Registered with HOST ✓")
-    except Exception as e:
-        warn(f"Could not send back to HOST: {e}")
 
-    # ── Verify our key works for HOST ─────────────────────────────────
-    time.sleep(0.8)
-    mac = get_mac(host_ip)
-    did = make_device_id(mac, host_host, host_user)
-    kp  = ""
-    for k in _find_existing_keys():
-        if test_key(host_ip, host_user, host_port, k):
-            kp = k; break
+    _registered = False
+    for _attempt in range(3):
+        try:
+            conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            conn.settimeout(10)
+            conn.connect((host_ip, PAIR_PORT))
+            # Read and discard beacon
+            _d = b""
+            try:
+                while b"\n" not in _d:
+                    _c = conn.recv(4096)
+                    if not _c: break
+                    _d += _c
+            except Exception: pass
+            conn.sendall(reply)
+            conn.close()
+            _registered = True
+            break
+        except Exception:
+            if _attempt < 2: time.sleep(1)
+    if _registered:
+        ok("Registered with HOST ✓")
+    else:
+        warn("Could not register with HOST — HOST may have timed out")
+
+    # Install our key on HOST via password SSH — one password entry
+    sep()
+    pr(f"  {C.B}Step 1/2:{C.R} Installing our key on HOST")
+    pr(f"  {C.Y}Enter password of {host_user}@{host_ip}{C.R}")
+    pr(f"  {C.G}This is the only time a password is needed.{C.R}\n")
+    if not _install_key_interactive(
+            host_ip, host_user, host_port, my_pub, os_type=_host_os):
+        err("Key install failed — check username and password.")
+        pause(); return hosts
+    ok("Our key installed on HOST ✓")
+
+    # Install HOST pub key locally
+    sep()
+    pr(f"  {C.B}Step 2/2:{C.R} Installing HOST key locally")
+    if host_pub_key:
+        _install_pub_key_locally(host_pub_key)
+        ok("HOST key installed locally ✓")
+    else:
+        warn("HOST sent no public key — HOST cannot reach us")
+
+    # Verify our key works against HOST
+    time.sleep(1)
+    kp = ""
+    for _k in _find_existing_keys():
+        if test_key(host_ip, host_user, host_port, _k):
+            kp = _k; break
     if kp:
         save_key(did, kp)
-        ok(f"SSH key verified — {host_user}@{host_ip} ✓")
+        ok(f"Key verified — {host_user}@{host_ip} ✓")
     else:
-        warn("Key installed but could not verify yet — try Transfer → Setup")
+        # my_kp is correct — sshd on HOST may still be reloading
+        kp = my_kp
+        save_key(did, kp)
+        warn("Key saved — verify failed (sshd reloading), will work shortly")
 
     new_host = {
-        "ip"        : host_ip,
-        "hostname"  : host_host,
-        "mac"       : mac,
-        "ssh_port"  : host_port,
-        "os_type"   : "other",
-        "user"      : host_user,
-        "device_id" : did,
-        "key_source": kp,
-        "key_ok"    : bool(kp),
-        "mac_randomized": True,
-        "seen_at"   : time.time(),
+        "ip"            : host_ip,
+        "hostname"      : host_host,
+        "mac"           : host_mac,
+        "ssh_port"      : host_port,
+        "os_type"       : _host_os,
+        "user"          : host_user,
+        "device_id"     : did,
+        "key_source"    : os.path.basename(kp),
+        "key_ok"        : True,
+        "mac_randomized": _host_os in MAC_RANDOMIZED_OS,
+        "seen_at"       : time.time(),
     }
     hosts[host_ip] = new_host
     save_hosts(hosts)
@@ -7710,13 +7815,14 @@ def _pair_as_client(hosts: dict) -> dict:
     print()
     ok("TWO-WAY PAIRING COMPLETE!")
     pr(f"  {C.G}✓{C.R}  We can SSH/SCP to HOST ({host_user}@{host_ip})")
-    pr(f"  {C.G}✓{C.R}  HOST can SSH/SCP back to us")
+    pr(f"  {C.G}✓{C.R}  HOST can SSH/SCP to us (key installed both ways)")
     pr(f"  {C.D}No password ever needed again.{C.R}")
 
-    # ── Naming ceremony ───────────────────────────────────────────────
-    if kp and os.path.exists(kp):
+    # Naming ceremony
+    _kp_r = os.path.realpath(os.path.expanduser(kp))
+    if os.path.exists(_kp_r):
         kp_after, new_host = _name_connection(
-            new_host, kp, hosts,
+            new_host, _kp_r, hosts,
             remote_ip=host_ip, remote_user=host_user,
             remote_port=host_port, is_pair=True)
         hosts[host_ip] = new_host
