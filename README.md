@@ -252,7 +252,7 @@ HOST generates a 6-digit PIN and opens a TCP listener on port 55222. CLIENT scan
 ```
   HOST screen:                        CLIENT screen:
   ╔════════════════════╗              ╔════════════════════╗
-  ║   482917            ║              ║   482917            ║
+  ║   482917           ║              ║   482917           ║
   ╚════════════════════╝              ╚════════════════════╝
 
   CLIENT is scanning the LAN...       PIN confirmed? [Y]:
