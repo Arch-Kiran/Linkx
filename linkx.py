@@ -1,5 +1,5 @@
 """
-Linkx v16 — Smart Network File Transfer
+Linkx — Smart Network File Transfer
 All issues fixed, clean build from scratch.
 
 FLOW:
