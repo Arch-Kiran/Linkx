@@ -1,4 +1,4 @@
-# LInkx
+# Linkx
 
 > Transfer files between any devices on your network at full native speed — no cloud, no accounts, no bullshit.
 
@@ -7,12 +7,12 @@
 
 ---
 
-## What is LInkx?
+## What is Linkx?
 
-LInkx is a **single Python file** that transfers files between any devices on your local network using SSH. No internet. No cloud accounts. No installation. Just run it.
+Linkx is a **single Python file** that transfers files between any devices on your local network using SSH. No internet. No cloud accounts. No installation. Just run it.
 
 **How it works under the hood:**  
-LInkx is a command factory. It figures out the correct `scp`/`rsync`/`ssh` command for your situation, fires it, and steps aside completely. Python never touches your data in transit — the OS handles the transfer natively at full hardware speed. What you see in the terminal is the actual `scp` command running, not a wrapper.
+Linkx is a command factory. It figures out the correct `scp`/`rsync`/`ssh` command for your situation, fires it, and steps aside completely. Python never touches your data in transit — the OS handles the transfer natively at full hardware speed. What you see in the terminal is the actual `scp` command running, not a wrapper.
 
 ---
 
@@ -84,7 +84,7 @@ The main menu shows all known devices and their status at a glance.
     [1]  Scan network          find SSH devices
     [2]  Transfer files        send / receive
     [3]  Setup device          first-time connect (one-way)
-    [P]  Pair devices  🔗     two-way key exchange (both run LInkx)
+    [P]  Pair devices  🔗     two-way key exchange (both run Linkx)
     [4]  My SSH keys
     [5]  Remove device
     [6]  Rename / nickname a device
@@ -101,7 +101,7 @@ The main menu shows all known devices and their status at a glance.
 
 ### Step 1 — Start SSH on the Target Device
 
-Before LInkx can reach another device, that device needs its SSH server running.  
+Before Linkx can reach another device, that device needs its SSH server running.  
 Use `[7] SSH Server` to start/stop SSH on **your** device.
 
 **Android / Termux:**
@@ -115,7 +115,7 @@ sshd                   # starts SSH on port 8022
 ```
 Settings → Apps → Optional Features → Add → OpenSSH Server
 Then: Start-Service sshd   (PowerShell as Admin)
-Or use [7] SSH Server in LInkx — it handles everything automatically
+Or use [7] SSH Server in Linkx — it handles everything automatically
 ```
 
 **Linux (Debian / Ubuntu / Kali):**
@@ -133,7 +133,7 @@ System Settings → General → Sharing → Remote Login → ON
 
 ### Step 2 — Scan the Network `[1]`
 
-LInkx scans your local network and finds every device with SSH open. No IP entry needed.
+Linkx scans your local network and finds every device with SSH open. No IP entry needed.
 
 ```
   ╔════════════════════════════════════════════════════════════════╗
@@ -165,7 +165,7 @@ LInkx scans your local network and finds every device with SSH open. No IP entry
 ### Step 3 — First-Time Connect: Setup `[3]` or Pair `[P]`
 
 #### Option A — Setup `[3]`
-One-way setup. You know the other device's password. LInkx installs a key on the remote so you never need the password again. The remote device does not need LInkx installed.
+One-way setup. You know the other device's password. Linkx installs a key on the remote so you never need the password again. The remote device does not need Linkx installed.
 
 ```
   What OS is on 192.168.45.162?
@@ -193,13 +193,13 @@ After setup, name both devices:
   ✓  Identity: Vivo remembered by key — survives IP/MAC changes
 ```
 
-The key file `V-15_to_Vivo` is permanent. If the phone changes IP or MAC, LInkx finds it by trying this key against every device on the subnet — the first one that accepts it is Vivo.
+The key file `V-15_to_Vivo` is permanent. If the phone changes IP or MAC, Linkx finds it by trying this key against every device on the subnet — the first one that accepts it is Vivo.
 
 ---
 
-#### Option B — Pair `[P]` (both devices run LInkx — two-way)
+#### Option B — Pair `[P]` (both devices run Linkx — two-way)
 
-Pairing is a **two-way simultaneous setup**. Both devices run LInkx. After pairing, both devices can SSH into each other freely — no passwords, no manual config, forever.
+Pairing is a **two-way simultaneous setup**. Both devices run Linkx. After pairing, both devices can SSH into each other freely — no passwords, no manual config, forever.
 
 **What makes Pair different from Setup:**
 - Setup installs a key in one direction only (you → them)
@@ -207,7 +207,7 @@ Pairing is a **two-way simultaneous setup**. Both devices run LInkx. After pairi
 - Both devices appear in each other's known device list immediately
 - Both devices can initiate transfers to each other at any time
 
-**Before choosing HOST or CLIENT, LInkx starts the SSH server on your device automatically.** This is required so the other device can reach you after pairing.
+**Before choosing HOST or CLIENT, Linkx starts the SSH server on your device automatically.** This is required so the other device can reach you after pairing.
 
 ```
   ╔════════════════════════════════════════════════════════════════╗
@@ -230,7 +230,7 @@ Pairing is a **two-way simultaneous setup**. Both devices run LInkx. After pairi
   ❯  Choose:
 ```
 
-If SSH server cannot start, LInkx warns you and asks if you want to continue one-way:
+If SSH server cannot start, Linkx warns you and asks if you want to continue one-way:
 ```
   ⚠  SSH server could not start on this device.
      The other device will NOT be able to connect to you.
@@ -261,10 +261,10 @@ HOST generates a 6-digit PIN and opens a TCP listener on port 55222. CLIENT scan
 **Phase 2 — Mutual key install (one password each, once)**  
 This is the core. Two password SSH sessions happen — one from each side.
 
-- **CLIENT → HOST**: CLIENT enters HOST's password. LInkx installs CLIENT's fresh key on HOST's `authorized_keys`. CLIENT can now SSH to HOST without a password forever.
-- **HOST → CLIENT**: HOST enters CLIENT's password. LInkx installs HOST's fresh key on CLIENT's `authorized_keys`. HOST can now SSH to CLIENT without a password forever.
+- **CLIENT → HOST**: CLIENT enters HOST's password. Linkx installs CLIENT's fresh key on HOST's `authorized_keys`. CLIENT can now SSH to HOST without a password forever.
+- **HOST → CLIENT**: HOST enters CLIENT's password. Linkx installs HOST's fresh key on CLIENT's `authorized_keys`. HOST can now SSH to CLIENT without a password forever.
 
-Each password is entered exactly once, on its own screen. LInkx never stores or sees any password. The OS handles it directly.
+Each password is entered exactly once, on its own screen. Linkx never stores or sees any password. The OS handles it directly.
 
 ```
   CLIENT side:                         HOST side:
@@ -336,7 +336,7 @@ Both devices run the naming ceremony independently. Keys are renamed from their 
 
 #### Send `[1]`
 
-Pick files one by one, optionally compress each with 7-Zip, then pick the remote destination by live-browsing the remote filesystem. LInkx checks if items already exist and offers rsync (delta), overwrite, or copy to new folder. If total file count exceeds the tar threshold, items are bundled into `Transfer.tar` first for speed.
+Pick files one by one, optionally compress each with 7-Zip, then pick the remote destination by live-browsing the remote filesystem. Linkx checks if items already exist and offers rsync (delta), overwrite, or copy to new folder. If total file count exceeds the tar threshold, items are bundled into `Transfer.tar` first for speed.
 
 ```
   Total files: 48  (threshold: 10)
@@ -422,7 +422,7 @@ Pick files first. If the device is online, transfer fires immediately. If offlin
 
 ### SSH Server Manager `[7]`
 
-Start or stop the SSH server on this device with one keypress. LInkx detects your OS and runs the correct command. On Windows it also manages firewall rules automatically.
+Start or stop the SSH server on this device with one keypress. Linkx detects your OS and runs the correct command. On Windows it also manages firewall rules automatically.
 
 ```
   Status : ● RUNNING  (port 22)
@@ -435,32 +435,32 @@ Start or stop the SSH server on this device with one keypress. LInkx detects you
 
 ---
 
-### Share LInkx `[S]`
+### Share Linkx `[S]`
 
 Send `linkx.py` itself to another device. Creates `Downloads/Linkx/Linkx app/linkx.py` on the remote and shows the exact command to run it.
 
 ---
 
-## Device Identity — How LInkx Tracks Devices
+## Device Identity — How Linkx Tracks Devices
 
-Devices change IPs. Android randomizes MACs. LInkx handles all of it.
+Devices change IPs. Android randomizes MACs. Linkx handles all of it.
 
 **3-phase device re-identification:**
 ```
 Phase 1: Direct TCP probe to last known IP         (~50ms, instant)
 Phase 2: ARP table MAC lookup                      (skipped for Android/Windows)
 Phase 3: Named key scan — the KEY is the identity
-          LInkx tries device's key against every SSH device on subnet.
+          Linkx tries device's key against every SSH device on subnet.
           First device that accepts it = the device. IP irrelevant.
 ```
 
-Once you name your devices (`V-15_to_Vivo`), that key is the permanent identity. Factory reset the phone, reinstall, change network — LInkx still finds it.
+Once you name your devices (`V-15_to_Vivo`), that key is the permanent identity. Factory reset the phone, reinstall, change network — Linkx still finds it.
 
 ---
 
 ## Transfer Logic Reference
 
-| Situation | What LInkx does |
+| Situation | What Linkx does |
 |---|---|
 | Single file, new at destination | Direct scp |
 | Single file, exists at destination | rsync (delta) or overwrite / Copy folder |
@@ -480,7 +480,7 @@ Once you name your devices (`V-15_to_Vivo`), that key is the permanent identity.
 
 | | Setup `[3]` | Pair `[P]` |
 |---|---|---|
-| Both devices need LInkx | ❌ No | ✅ Yes |
+| Both devices need Linkx | ❌ No | ✅ Yes |
 | Password required | Once (yours → theirs) | Once each side |
 | Keys installed | One direction only | Both directions |
 | Other device appears in your list | ✅ | ✅ |
@@ -492,7 +492,7 @@ Once you name your devices (`V-15_to_Vivo`), that key is the permanent identity.
 
 ## Data Files
 
-LInkx stores everything alongside `linkx.py`:
+Linkx stores everything alongside `linkx.py`:
 
 ```
 Linkx/
@@ -528,7 +528,7 @@ Edit these constants near the top of `linkx.py`:
 
 ```bash
 python3 linkx.py --version
-# LInkx v1.0.0.0
+# Linkx v1.0.0.0
 # Author  : Kiran Pradeep Malik
 # Email   : sysarch.kiran@gmail.com
 # Launched: 2026-04-28
