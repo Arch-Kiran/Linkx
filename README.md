@@ -1,71 +1,109 @@
-# Linkx
+<div align="center">
 
-> Transfer files between any devices on your network at full native speed — no cloud, no accounts, no bullshit.
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=32&duration=2800&pause=1200&color=00D9FF&center=true&vCenter=true&width=800&lines=Linkx;Your+files.+Your+network.;No+cloud.+No+accounts.+Full+speed." alt="Linkx" />
 
-**Version:** 1.0.0.0 &nbsp;|&nbsp; **Author:** Kiran Pradeep Malik &nbsp;|&nbsp; **License:** MIT  
-**Contact:** sysarch.kiran@gmail.com &nbsp;|&nbsp; **Instagram:** [@kiran_0807x](https://www.instagram.com/kiran_0807x?igsh=MWZtaTcyMGg5ODkzbw==)
+<br/>
 
----
+**The file transfer tool that respects you.**
+One Python file. Zero dependencies. Hardware-maximum speed. No cloud. No accounts. No bullshit.
 
-## What is Linkx?
+<br/>
 
-Linkx is a **single Python file** that transfers files between any devices on your local network using SSH. No internet. No cloud accounts. No installation. Just run it.
+[![Python](https://img.shields.io/badge/Python-3.8%2B-58a6ff?style=flat-square&logo=python&logoColor=white&labelColor=21262d)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-3fb950?style=flat-square&labelColor=21262d)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Android%20%7C%20Windows%20%7C%20macOS-bc8cff?style=flat-square&labelColor=21262d)](https://github.com/Arch-Kiran/Linkx)
+[![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-f85149?style=flat-square&labelColor=21262d)](https://github.com/Arch-Kiran/Linkx)
+[![SSH](https://img.shields.io/badge/Transport-SSH%20%2F%20SCP-d29922?style=flat-square&labelColor=21262d)](https://github.com/Arch-Kiran/Linkx)
 
-**How it works under the hood:**  
-Linkx is a command factory. It figures out the correct `scp`/`rsync`/`ssh` command for your situation, fires it, and steps aside completely. Python never touches your data in transit — the OS handles the transfer natively at full hardware speed. What you see in the terminal is the actual `scp` command running, not a wrapper.
-
----
-
-## Platform Support
-
-| Platform | Send | Receive | SSH Port | Notes |
-|---|---|---|---|---|
-| Linux (all distros) | ✅ | ✅ | 22 | Full support |
-| Android / Termux | ✅ | ✅ | 8022 | Full support |
-| macOS | ✅ | ✅ | 22 | Full support |
-| Windows 10 / 11 | ✅ | ✅ | 22 | OpenSSH required |
-| Windows 7 / 8 | ⚠️ | ⚠️ | 22 | Manual Win32-OpenSSH install |
-| iOS | ❌ | ❌ | — | No SSH server without jailbreak |
-
----
-
-## Requirements
-
-- **Python 3.12+** recommended (tested on 3.12.7)
-- **`ssh` and `scp`** on PATH (OpenSSH client)
-- **SSH server running** on the target device
-- Both devices on the **same network** (WiFi / hotspot / USB tether / LAN)
-- No pip installs. Zero external dependencies. stdlib only.
-
----
-
-## Quick Start
+<br/>
 
 ```bash
-# Clone the repo
-git clone https://github.com/Arch-Kiran/Linkx.git
-cd Linkx
+# get it
+git clone https://github.com/Arch-Kiran/Linkx.git && cd Linkx
 
-# Run
-python3 linkx.py          # Linux / macOS / Android (Termux)
-python  linkx.py          # Windows
-
-# Version info
-python3 linkx.py --version
+# run it
+python3 linkx.py
 ```
 
-First run automatically opens the user guide.
+No installer. No pip. No setup.py. Clone and run — that is it.  
+→ [Full installation guide for all platforms](#installation)
+
+<br/>
+
+</div>
 
 ---
 
-## How to Use — Full Walkthrough
+<div align="center">
+
+### While you were reading this, someone's cloud upload was still at 3%.
+
+</div>
 
 ---
 
-### Home Screen
+## The Problem With Every Other Tool
 
-The main menu shows all known devices and their status at a glance.  
-`●` = online, `○` = offline, `🔑` = key ready, `🔒` = in Vault, `★` = trusted (Quick Share auto-transfer).
+| Tool | What it costs you |
+|---|---|
+| AirDrop | Apple devices only. Excluded by design. |
+| Bluetooth | Real. Actual. Pain. |
+| WhatsApp / Telegram | 16 MB limit. Compression destroys your photos. Someone else's server. |
+| Google Drive / iCloud | Upload to their server. Download from their server. Pray for bandwidth. |
+| USB cable | Find the cable. Find the right cable. Find the adapter for the cable. |
+| Other LAN tools | Installation. Config files. Port forwarding. Why. |
+
+**Linkx:** open terminal, run one file, transfer at the speed your hardware allows. Done.
+
+---
+
+## What Linkx Actually Is
+
+A single Python file that builds the right `scp` command for your exact situation and fires it.
+
+Python touches zero bytes of your data. The OS handles the transfer natively at full hardware speed. No buffering. No re-encoding. No overhead. The progress bar you see is the actual `scp` process running — not a wrapper, not a simulation.
+
+```
+Your device  ──── SSH / SCP ────▶  Their device
+              direct, encrypted
+              nothing in between
+```
+
+---
+
+## Real Numbers From Real Hardware
+
+Three devices. One hotspot. Real conditions — not a benchmark.
+
+**The setup:** HP Victus (WiFi 6) + Vivo Y33s (WiFi 5) + Redmi 4A. The Vivo acts as 5GHz hotspot for both. No router. Devices talking directly through the phone.
+
+```
+Laptop → Vivo Y33s · 5GHz hotspot · no interference nearby
+█████████████  39 MB/s
+
+Laptop → Kali VM · VMware Host-Only · zero middleman at all
+████████████████████████████████████████████████  130 MB/s
+
+Same devices · same room · Airtel router ON nearby (not even connected to it)
+███  6 MB/s
+```
+
+The router was not part of the connection. It was just **on**, in the same room, competing for the 5GHz band. Drove home, ran the same transfer again — **39 MB/s**. Hypothesis confirmed.
+
+That is not a Linkx number. That is physics. Linkx gets out of the way and lets your hardware run.
+
+**What steals your speed:** nearby routers eating airtime, Bluetooth and mobile data splitting the chip's attention, any middleman adding hops.
+**What gets it back:** kill Bluetooth, turn off mobile data, move away from other routers, use a direct hotspot.
+
+---
+
+## How It Looks — Full Walkthrough
+
+Every screen shown exactly as it appears in the terminal.
+
+---
+
+### The Home Screen
 
 ```
   ╔════════════════════════════════════════════════════════════════╗
@@ -75,65 +113,35 @@ The main menu shows all known devices and their status at a glance.
     Known devices: 5   Key ready: 2   Vault: 1
     ⚡ 1 transfer(s) queued — pinging offline device(s)...
   ────────────────────────────────────────────────────────────────
-  ●  Vivo              10.100.83.199    u0_a226     Android / Termux  🔑 V-15_to_Vivo  ★
-  ●  Kali              192.168.45.150   kira        Kali Linux  🔑 V-15_to_Kali  🔒
+  ●  Vivo    10.100.83.199    u0_a226    Android / Termux  🔑 V-15_to_Vivo  ★
+  ●  Kali    192.168.45.150   kira       Linux             🔑 V-15_to_Kali  🔒
   ────────────────────────────────────────────────────────────────
     [Q]  Quick Share  ⚡  pick files → auto-send / queue when offline
     [V]  Vault  🔒  instant access to paired Linkx folders
   ────────────────────────────────────────────────────────────────
-    [1]  Scan network          find SSH devices
-    [2]  Transfer files        send / receive
-    [3]  Setup device          first-time connect (one-way)
-    [P]  Pair devices  🔗     two-way key exchange (both run Linkx)
+    [1]  Scan network           find SSH devices
+    [2]  Transfer files          send / receive
+    [3]  Setup device            first-time connect (one-way)
+    [P]  Pair devices  🔗       two-way key exchange
     [4]  My SSH keys
     [5]  Remove device
     [6]  Rename / nickname a device
     [7]  SSH Server    start / stop this device's server
-    [8]  Install tools  7-Zip / rsync / ssh    ✓ all ready
-    [T]  Raw terminal  run commands without quitting
+    [8]  Install tools
+    [T]  Raw terminal
     [?]  How to use this tool
     [0]  Exit
   ────────────────────────────────────────────────────────────────
   ❯  Choose:
 ```
 
----
-
-### Step 1 — Start SSH on the Target Device
-
-Before Linkx can reach another device, that device needs its SSH server running.  
-Use `[7] SSH Server` to start/stop SSH on **your** device.
-
-**Android / Termux:**
-```bash
-pkg install openssh    # first time only
-passwd                 # set a password (first time)
-sshd                   # starts SSH on port 8022
-```
-
-**Windows 10 / 11:**
-```
-Settings → Apps → Optional Features → Add → OpenSSH Server
-Then: Start-Service sshd   (PowerShell as Admin)
-Or use [7] SSH Server in Linkx — it handles everything automatically
-```
-
-**Linux (Debian / Ubuntu / Kali):**
-```bash
-sudo apt install openssh-server   # first time only
-sudo systemctl start ssh
-```
-
-**macOS:**
-```
-System Settings → General → Sharing → Remote Login → ON
-```
+`●` = online  `○` = offline  `🔑` = key ready  `🔒` = in Vault  `★` = trusted (silent auto-transfer)
 
 ---
 
-### Step 2 — Scan the Network `[1]`
+### Scanning the Network `[1]`
 
-Linkx scans your local network and finds every device with SSH open. No IP entry needed.
+No IP entry. No config. Linkx finds every SSH device on your network automatically.
 
 ```
   ╔════════════════════════════════════════════════════════════════╗
@@ -143,6 +151,7 @@ Linkx scans your local network and finds every device with SSH open. No IP entry
   Scan strategy:
     Phase 1 → Stored devices (last known IP + MAC)  [instant]
     Phase 2 → Full subnet scan  192.168.100.x, 192.168.45.x, 10.100.83.x
+    5 stored device(s) — probed first
 
     Ports : 22 (Linux/Win/Mac)  8022 (Android/Termux)
     Speed : 1.2s/host  |  200 threads  |  ports 22+8022 parallel
@@ -152,164 +161,133 @@ Linkx scans your local network and finds every device with SSH open. No IP entry
   ❯  Device number (or Enter when done):
 ```
 
-**How the scanner works:**
-- Phase 1 probes all known devices simultaneously using their last known IP (~0.5s)
-- Phase 2 blasts the full subnet with OS-aware thread count (100–300 threads)
-- Both port 22 and 8022 probed in parallel per IP — worst case 1.2s per host
-- Banner grab identifies OS from SSH handshake with no auth needed
+**How it works under the hood:**
+- Phase 1 probes all known devices simultaneously using their last known IP — instant if nothing changed
+- Phase 2 blasts the full subnet with 100–300 parallel threads depending on OS
+- Both port 22 and 8022 probed in parallel per IP — worst case 1.2s per host, not 2.4s
+- SSH banner identifies OS without any authentication
 - VMware bridged VMs: scans both the VM subnet and hotspot subnets via gateway detection
-- Devices with changed IPs are re-identified by their stored SSH key fingerprint
+- Devices with changed IPs re-identified by their stored SSH key fingerprint
 
 ---
 
-### Step 3 — First-Time Connect: Setup `[3]` or Pair `[P]`
+### First-Time Connect — Setup `[3]`
 
-#### Option A — Setup `[3]`
-One-way setup. You know the other device's password. Linkx installs a key on the remote so you never need the password again. The remote device does not need Linkx installed.
+One-way. Remote device does not need Linkx. Enter their password once. Never again.
 
 ```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                  SETUP — 192.168.45.162                        ║
+  ╚════════════════════════════════════════════════════════════════╝
+
+  Detecting remote OS from SSH banner...
+  Detected: android
+
   What OS is on 192.168.45.162?
   [1]  Android / Termux              port 8022  ← detected
-  [2]  Linux — Debian/Ubuntu/Mint    port 22
+  [2]  Linux — Debian/Ubuntu/Kali    port 22
   [w]  Windows 10/11 (OpenSSH)       port 22
   ...
+  ❯  OS type [1]:
 
-  Remote username [u0_a226]:
+  Remote username (run 'whoami' in Termux → e.g. u0_a226)
+  ❯  Username []:
 
   SSH will ask for the password of u0_a226@192.168.45.162
-  Type it when prompted (characters are hidden).
+  Type it when prompted. Characters are hidden.
 
-  ✓  Key login confirmed — u0_a226@192.168.45.162
-  ✓  Passwordless connection established!
+  [password entered once — key installed automatically]
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  ✓  Key login confirmed — u0_a226@192.168.45.162             │
+  └──────────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────┐
+  │  ✓  Passwordless connection established!                      │
+  └──────────────────────────────────────────────────────────────┘
 ```
 
-After setup, name both devices:
+Then name both devices — this name survives everything:
+
 ```
-  Your device name [V-15]: V-15
-  Other device name [u0_a226]: Vivo
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                    NAME THIS CONNECTION                        ║
+  ╚════════════════════════════════════════════════════════════════╝
+
+  ❯  Your device name [V-15]:   V-15
+  ❯  Other device name [u0_a226]: Vivo
 
   Renaming key:  V-15_to_Vivo
   ✓  Key renamed: V-15_to_Vivo
   ✓  Identity: Vivo remembered by key — survives IP/MAC changes
 ```
 
-The key file `V-15_to_Vivo` is permanent. If the phone changes IP or MAC, Linkx finds it by trying this key against every device on the subnet — the first one that accepts it is Vivo.
+`V-15_to_Vivo` is now the permanent identity of this connection. Factory reset the phone, change network, get a new IP — Linkx tries this key against every device on the subnet. First one that accepts it is Vivo.
 
 ---
 
-#### Option B — Pair `[P]` (both devices run Linkx — two-way)
+### First-Time Connect — Pair `[P]`
 
-Pairing is a **two-way simultaneous setup**. Both devices run Linkx. After pairing, both devices can SSH into each other freely — no passwords, no manual config, forever.
+Two-way. Both devices run Linkx. SSH server starts automatically on both. Keys installed in both directions. One password each side. Never again.
 
-**What makes Pair different from Setup:**
-- Setup installs a key in one direction only (you → them)
-- Pairing installs keys in both directions simultaneously (you → them AND them → you)
-- Both devices appear in each other's known device list immediately
-- Both devices can initiate transfers to each other at any time
-
-**Before choosing HOST or CLIENT, Linkx starts the SSH server on your device automatically.** This is required so the other device can reach you after pairing.
-
+**HOST side** shows a PIN and waits:
 ```
   ╔════════════════════════════════════════════════════════════════╗
-  ║                ZERO-CONFIG PAIRING                             ║
-  ║          Pair two devices running linkx.py                     ║
+  ║             PAIRING — HOST MODE                                ║
   ╚════════════════════════════════════════════════════════════════╝
 
-  Both devices run linkx.py and choose Pair.
-  Both devices start SSH server first.
-  HOST opens a pairing listener, CLIENT scans and finds it,
-  confirms a PIN, both enter each other's password once,
-  keys installed both ways — no passwords ever again.
-
-  Starting SSH server on this device...
   ✓  SSH server ready on port 22
 
-  [1]  HOST   — I am the device others connect TO
-  [2]  CLIENT — I will find and connect to the HOST
+    PIN — CLIENT must confirm this matches:
 
-  ❯  Choose:
+  ╔════════════════════╗
+  ║   482917           ║
+  ╚════════════════════╝
+
+  CLIENT is scanning the LAN to find us...
 ```
 
-If SSH server cannot start, Linkx warns you and asks if you want to continue one-way:
+**CLIENT side** scans, finds HOST, confirms PIN:
 ```
-  ⚠  SSH server could not start on this device.
-     The other device will NOT be able to connect to you.
-     You can still connect TO the other device (one-way).
+  ╔════════════════════════════════════════════════════════════════╗
+  ║             PAIRING — CLIENT MODE   HOST found: V-15           ║
+  ╚════════════════════════════════════════════════════════════════╝
 
-  Continue anyway? [N]:
+  HOST device:
+    IP       : 192.168.100.1
+    Hostname : V-15
+    SSH port : 22
+
+  Confirm PIN matches HOST screen:
+
+  ╔════════════════════╗
+  ║   482917           ║
+  ╚════════════════════╝
+
+  [Y]  PIN matches — pair now
+  [N]  Wrong device — cancel
+  ❯  PIN confirmed? [Y]:
+
+  Step 1/2: Installing our key on HOST
+  Enter password of user@192.168.100.1
+  [password entered — key installed on HOST]
+  ✓  Our key installed on HOST ✓
+
+  Step 2/2: Installing HOST key locally
+  ✓  HOST key installed locally ✓
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  TWO-WAY PAIRING COMPLETE!                                   │
+  │  ✓  We can SSH/SCP to HOST                                   │
+  │  ✓  HOST can SSH/SCP to us                                   │
+  │     No password ever needed again.                           │
+  └──────────────────────────────────────────────────────────────┘
 ```
+
+Result: both devices appear in each other's device list. Either can initiate transfers. No passwords. Forever.
 
 ---
 
-**The full pairing flow — step by step:**
-
-**Phase 0 — SSH server starts on both devices**  
-Both devices call `[7]`-equivalent automatically. SSH is running on both before any role is chosen.
-
-**Phase 1 — PIN coordination**  
-HOST generates a 6-digit PIN and opens a TCP listener on port 55222. CLIENT scans the LAN with up to 300 parallel probes, finds HOST in seconds. No IP entry needed. The PIN is shown on both screens — you confirm it matches visually before anything is exchanged.
-
-```
-  HOST screen:                        CLIENT screen:
-  ╔════════════════════╗              ╔════════════════════╗
-  ║   482917           ║              ║   482917           ║
-  ╚════════════════════╝              ╚════════════════════╝
-
-  CLIENT is scanning the LAN...       PIN confirmed? [Y]:
-```
-
-**Phase 2 — Mutual key install (one password each, once)**  
-This is the core. Two password SSH sessions happen — one from each side.
-
-- **CLIENT → HOST**: CLIENT enters HOST's password. Linkx installs CLIENT's fresh key on HOST's `authorized_keys`. CLIENT can now SSH to HOST without a password forever.
-- **HOST → CLIENT**: HOST enters CLIENT's password. Linkx installs HOST's fresh key on CLIENT's `authorized_keys`. HOST can now SSH to CLIENT without a password forever.
-
-Each password is entered exactly once, on its own screen. Linkx never stores or sees any password. The OS handles it directly.
-
-```
-  CLIENT side:                         HOST side:
-  Step 1/2: Installing our key on      Two-way setup: Installing HOST
-  HOST                                 key on CLIENT
-  Enter password of kali@192.168.1.10  Enter password of user@192.168.1.20
-  [password typed — hidden]            [password typed — hidden]
-  ✓  Our key installed on HOST ✓       ✓  HOST key installed on CLIENT ✓
-```
-
-**Phase 3 — Both devices saved to each other's database**  
-After both sessions complete, both devices call `save_hosts()`. The device appears in Transfer, Quick Share, Vault, and the main device list on both sides immediately. `key_ok: True` is set on both records.
-
-**Phase 4 — Naming ceremony**  
-Both devices run the naming ceremony independently. Keys are renamed from their temporary device-ID labels to friendly names.
-
-```
-  Your device name [kalibox]: Kali
-  Other device name [DESKTOP-V15]: V-15
-
-  Renaming key:  Kali_to_V-15
-  ✓  Key renamed: Kali_to_V-15
-  ✓  Identity: V-15 remembered by key — survives IP/MAC changes
-```
-
-**Result:**
-```
-  TWO-WAY PAIRING COMPLETE!
-  ✓  We can SSH/SCP to HOST (kali@192.168.1.10)
-  ✓  HOST can SSH/SCP to us (key installed both ways)
-     No password ever needed again.
-```
-
-**Edge cases handled automatically:**
-- If SSH server fails to start on one side — warns and offers one-way continuation
-- If HOST times out before CLIENT connects — clear timeout message, no hang
-- After CLIENT first contacts HOST, HOST gives 120 more seconds for the password entry step before timing out — no rush
-- If one password entry fails — that direction is one-way; the other direction still works
-- VMware bridged VMs: CLIENT scans both the VM subnet and phone hotspot subnets via gateway detection, finding HOST even across different subnets
-- Android/Termux: `os.path.realpath` resolves symlink paths before key rename — no `FileNotFoundError`
-- Windows HOST: `sshd_config` is automatically fixed to enable `PubkeyAuthentication yes` and ACLs on `administrators_authorized_keys` are corrected so the key actually works
-
----
-
-### Step 4 — Transfer Files `[2]`
+### Transfer Menu `[2]`
 
 ```
   ╔════════════════════════════════════════════════════════════════╗
@@ -319,51 +297,120 @@ Both devices run the naming ceremony independently. Keys are renamed from their 
     Key  : V-15_to_Vivo
     MAC  : 12:5f:43:0e:dd:04   ID: 43af72be
 
-  [1]  Send     →  file or folder TO this device
-  [2]  Receive  ←  file or folder FROM this device
-  [3]  Browse remote files
-  [4]  Run command on remote
-  [5]  Open SSH shell  (full terminal on REMOTE)
-  [S]  Share Linkx  →  send this app to device
-  [T]  Raw local terminal
-  [X]  Tar threshold : 10 files
   ────────────────────────────────────────────────────────────────
-  [6]  Re-setup  (change user / reinstall key)
-  [V]  🔒 In Vault  (already added)
-  [0]  Back
+    [1]  Send     →  file or folder TO this device
+    [2]  Receive  ←  file or folder FROM this device
+    [3]  Browse remote files
+    [4]  Run command on remote
+    [5]  Open SSH shell  (full terminal on remote device)
+    [S]  Share Linkx  →  send this app to device
+    [T]  Raw local terminal
+    [X]  Tar threshold : 10 files
+  ────────────────────────────────────────────────────────────────
+    [6]  Re-setup  (change user / reinstall key)
+    [V]  🔒 In Vault  (already added)
+    [0]  Back
   ❯  Choose:
 ```
 
-#### Send `[1]`
+#### Sending Files
 
-Pick files one by one, optionally compress each with 7-Zip, then pick the remote destination by live-browsing the remote filesystem. Linkx checks if items already exist and offers rsync (delta), overwrite, or copy to new folder. If total file count exceeds the tar threshold, items are bundled into `Transfer.tar` first for speed.
+Pick items. Optionally compress each with 7-Zip. Then browse the remote to pick destination:
+
+```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║              SEND — Queue    2 item(s) selected                ║
+  ╚════════════════════════════════════════════════════════════════╝
+
+  [ 1]  /home/kira/Books  (folder — 47 files)  → Books.7z  [.7z]
+  [ 2]  /home/kira/notes.pdf  (1.2MB)
+
+  [A]  Add another item
+  [D]  Done — proceed to send
+```
+
+Live-browse the remote filesystem to pick where files land:
+
+```
+    Locations on  u0_a226@10.100.83.199  [Android / Termux]:
+
+  [ 1]  Termux Home (~)              /data/data/com.termux/files/home
+  [ 2]  Downloads  (symlink)         ~/storage/downloads
+  [ 3]  Internal Storage (symlink)   ~/storage/shared
+  [ 4]  DCIM / Camera                ~/storage/dcim
+  ...
+    [P]  Paste path directly
+```
+
+If file count exceeds the tar threshold, items are bundled automatically:
 
 ```
   Total files: 48  (threshold: 10)
-  ✓  Transfer.tar ready  (18.4MB)
+  ┌──────────────────────────────────────────────────────────────┐
+  │  ✓  Transfer.tar ready  (18.4MB)                             │
+  └──────────────────────────────────────────────────────────────┘
 
   → Transfer.tar
-  Transferring: Transfer.tar
   [»»»»»»»»»»»»»»»»»»»»»»»»»»»»]  100%  36.2MB/s  ETA 0:00
-  ✓  Transferred!
-  ✓  Transfer.tar extracted and deleted on remote ✓
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  ✓  Transferred!                                             │
+  └──────────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────┐
+  │  ✓  Transfer.tar extracted and deleted on remote ✓           │
+  └──────────────────────────────────────────────────────────────┘
 ```
 
-#### Tar Threshold `[X]`
+#### Conflict Handling
 
-Control when files get bundled. Default is 10. Single files are never tarred regardless of size.
+File already exists at destination? Choose what happens:
 
 ```
-  0  = always tar (except single files)
-  10 = tar only when count > 10  (default)
-  99 = almost never tar
+  These items already exist at destination:
+    Books.7z
+
+  [1]  Install rsync then use delta transfer (only changed bytes)
+  [2]  Overwrite existing files
+  [3]  Send to Copy subfolder instead
+  [0]  Cancel
 ```
+
+#### Transfer Logic Reference
+
+| Situation | What Linkx does |
+|---|---|
+| Single file, new at destination | Direct scp |
+| Single file, already exists | rsync delta, overwrite, or copy folder |
+| Single file, any size | Never tarred |
+| Multiple files under threshold | Direct scp each |
+| Multiple files over threshold | Bundle into Transfer.tar → scp → extract |
+| Folder | Tar if file count exceeds threshold |
+| Compressed item | Always counts as 1 file regardless of contents |
+| rsync missing | Offer to install, or fallback to scp |
+| Windows remote | scp always — rsync to Windows is unreliable |
+
+**Default tar threshold: 10 files.** Change anytime with `[X]` in the Transfer menu.
 
 ---
 
-### Step 5 — Vault `[V]`
+### Vault `[V]`
 
-Vault is a curated list of devices you transfer with regularly. Each Vault device gets a shared `Linkx/` folder in Downloads on both devices. One keypress to browse, send, or receive from that shared folder.
+A curated list of devices you use regularly. Each Vault device gets a shared `Linkx/` folder in Downloads on both sides. One keypress to browse, send, or receive from that shared space.
+
+```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                      LINKX VAULT                               ║
+  ║                  Your trusted device library                   ║
+  ╚════════════════════════════════════════════════════════════════╝
+
+  [ 1]  ●  Vivo     Android / Termux
+  [ 2]  ○  Kali     Linux
+
+  ● = online now  ○ = offline
+  ❯  Choose device:
+```
+
+Inside a Vault device:
 
 ```
   ╔════════════════════════════════════════════════════════════════╗
@@ -376,55 +423,98 @@ Vault is a curated list of devices you transfer with regularly. Each Vault devic
   Remote Linkx:   /sdcard/Download/Linkx
 
   [1]  Browse remote Linkx folder
-  [2]  Send   → TO device
-  [3]  Receive ← FROM device
+  [2]  Send   → file/folder TO device
+  [3]  Receive ← file/folder FROM device
   [0]  Back
 ```
 
 ---
 
-### Step 6 — Quick Share `[Q]`
+### Quick Share `[Q]`
 
-Pick files first. If the device is online, transfer fires immediately. If offline, the transfer is queued and fires automatically the moment the device comes online.
+Pick files. Pick device. Done. Online = transfers immediately. Offline = queues automatically.
 
 ```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                  QUICK SHARE  ⚡                               ║
+  ║       Instant transfer — queue when offline                    ║
+  ╚════════════════════════════════════════════════════════════════╝
+
   [ 1]  ●  Vivo     Android / Termux    ★
   [ 2]  ○  Kali     Linux        [queued]
+
+  ● = online  ○ = offline  ★ = trusted (fires silently)
 ```
 
-**Trusted devices** (`★`) — transfer fires silently without any confirmation prompt.
+**Offline device** — choose how to handle it:
 
-**Queued transfer notification:**
 ```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                   DEVICE OFFLINE — Kali                        ║
+  ╚════════════════════════════════════════════════════════════════╝
+
+  [1]  SSH running — scan and update IP, then transfer
+  [2]  SSH not running — queue for when it comes online
+  [0]  Back
+```
+
+**When the device comes back online** — fires automatically:
+
+```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                    DEVICE ONLINE! — Kali                       ║
+  ╚════════════════════════════════════════════════════════════════╝
+
   ● Kali found at 192.168.45.150
+
   Queued: send 2 item(s) → /home/kira/Downloads
+    Books.7z   (18.4MB)
+    notes.pdf  (1.2MB)
 
   [Y]  Transfer now
   [P]  Pause — ask again in 2 minutes
   [N]  Cancel and clear queue
+  ❯  Choose [Y]:
 ```
+
+For **trusted devices** `★`, the entire confirmation is skipped. Transfer fires silently the moment they appear online. No prompt. No waiting.
 
 ---
 
-### Step 7 — Install Tools `[8]`
+### Device Identity — How Linkx Tracks Devices Across IP Changes
+
+Devices change IPs. Android randomises MACs on every connection. Linkx handles all of it automatically, silently, in the background.
 
 ```
-  7-Zip : ✓  installed
-  rsync : ✗  optional — scp fallback active
-  ssh   : ✓  installed
-  tar   : ✓  installed
+Phase 1 — Last known IP
+  Direct TCP probe, ~50ms.
+  Works if IP has not changed — instant.
+
+Phase 2 — ARP / MAC lookup
+  Find current IP from MAC address in ARP table.
+  Works if device got a new DHCP address but is still on the same network.
+  Skipped for Android, Windows, macOS — these randomise MACs per connection.
+
+Phase 3 — Named key scan
+  Try the device's named SSH key (V-15_to_Vivo) against every SSH host
+  found on the subnet. First device that accepts it = found.
+  Works even after factory reset on a completely new network.
 ```
 
-**7-Zip** — compress before sending. Installed via `apt` / `dnf` / `pacman` / `brew` / `winget`.  
-**rsync** — delta transfers. Only sends changed bytes. Linux ↔ Linux / Android / macOS. Windows uses scp fallback.
+Once named, `V-15_to_Vivo` is the permanent identity of that connection. Not the IP. Not the MAC. The key.
 
 ---
 
 ### SSH Server Manager `[7]`
 
-Start or stop the SSH server on this device with one keypress. Linkx detects your OS and runs the correct command. On Windows it also manages firewall rules automatically.
+Start or stop SSH on this device from inside Linkx. Handles `systemctl`, `launchctl`, `net start`, and Termux `sshd` automatically. On Windows also manages firewall rules.
 
 ```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                  SSH SERVER MANAGER                            ║
+  ║                This device: Kali Linux                         ║
+  ╚════════════════════════════════════════════════════════════════╝
+
   Status : ● RUNNING  (port 22)
 
   [1]  Stop SSH server
@@ -435,118 +525,254 @@ Start or stop the SSH server on this device with one keypress. Linkx detects you
 
 ---
 
+### Install Tools `[8]`
+
+Linkx detects what is installed and offers to install anything missing using the correct package manager for your OS.
+
+```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                       INSTALL TOOLS                            ║
+  ╚════════════════════════════════════════════════════════════════╝
+
+  7-Zip : ✓  installed
+  rsync : ✗  optional — scp fallback active
+  ssh   : ✓  installed
+  tar   : ✓  installed
+
+  [1]  Install / upgrade  7-Zip
+  [2]  Install / upgrade  rsync
+  [3]  Install / upgrade  openssh
+  [0]  Back
+```
+
+**7-Zip** — compress before sending. Installed via `apt` / `dnf` / `pacman` / `brew` / `winget`.
+**rsync** — delta transfers. Only sends changed bytes. Linux, Android, macOS. Windows uses scp fallback.
+
+---
+
 ### Share Linkx `[S]`
 
-Send `linkx.py` itself to another device. Creates `Downloads/Linkx/Linkx app/linkx.py` on the remote and shows the exact command to run it.
+Send `linkx.py` itself to any paired device. Creates `Downloads/Linkx/Linkx app/linkx.py` on the remote and shows the exact command to run it.
+
+```
+  ╔════════════════════════════════════════════════════════════════╗
+  ║                       SHARE LINKX                              ║
+  ╚════════════════════════════════════════════════════════════════╝
+
+  This script:  /home/kira/tools/linkx.py  (490KB)
+  Destination:  u0_a226@10.100.83.199:~/storage/downloads/Linkx/Linkx app
+
+  [Y]  Send now
+  [0]  Cancel
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  ✓  Linkx sent to u0_a226@10.100.83.199 ✓                   │
+  └──────────────────────────────────────────────────────────────┘
+
+  To run on the remote device:
+    cd ~/storage/downloads/Linkx/Linkx\ app
+    python linkx.py
+```
 
 ---
 
-## Device Identity — How Linkx Tracks Devices
+## Features
 
-Devices change IPs. Android randomizes MACs. Linkx handles all of it.
+<details>
+<summary><b>Transfer</b> — send anything, any size, any direction</summary>
+<br/>
 
-**3-phase device re-identification:**
-```
-Phase 1: Direct TCP probe to last known IP         (~50ms, instant)
-Phase 2: ARP table MAC lookup                      (skipped for Android/Windows)
-Phase 3: Named key scan — the KEY is the identity
-          Linkx tries device's key against every SSH device on subnet.
-          First device that accepts it = the device. IP irrelevant.
-```
+- Send and receive files and folders in both directions with a live remote file browser
+- Smart tar bundling — hundreds of files become one stream, extracted on arrival. Threshold you control.
+- Delta transfer via rsync — only changed bytes sent when file already exists at destination
+- 7-Zip compression — compress before sending, up to 6 levels, optional per file
+- Conflict resolution — file exists? Choose delta, overwrite, or copy to new folder.
 
-Once you name your devices (`V-15_to_Vivo`), that key is the permanent identity. Factory reset the phone, reinstall, change network — Linkx still finds it.
+</details>
+
+<details>
+<summary><b>Connection</b> — set up once, connect forever</summary>
+<br/>
+
+- Pair `[P]` — both devices run Linkx, LAN scan finds each other in seconds, PIN confirms identity, one password each side, keys in both directions. No passwords ever again.
+- Setup `[3]` — remote device does not need Linkx. One password. One direction. Done.
+- Permanent identity — key named `V-15_to_Vivo` survives IP changes, MAC randomisation, network changes, factory resets.
+- 3-phase tracking — last IP, then ARP/MAC, then full subnet key scan. Found even after factory reset.
+
+</details>
+
+<details>
+<summary><b>Automation</b> — fire and forget</summary>
+<br/>
+
+- Quick Share `[Q]` — pick files, pick device, done. Offline? Queued. Fires the instant they return.
+- Trusted devices — marked with star. Transfers fire silently. No prompt. No waiting.
+- Background watcher — polls every 8 seconds. You do not have to think about it.
+
+</details>
+
+<details>
+<summary><b>Organisation</b> — built for daily use</summary>
+<br/>
+
+- Vault `[V]` — shared `Linkx/` folder in Downloads on both sides. One keypress to browse, send, receive.
+- Named keys — `V-15_to_Vivo` not `192.168.1.42`. The name survives everything.
+- Nicknames — short display names in all menus.
+
+</details>
+
+<details>
+<summary><b>Control</b> — everything from one terminal</summary>
+<br/>
+
+- SSH shell `[5]` — full terminal on any paired device without leaving Linkx
+- Remote commands `[4]` — one-off commands, output shown inline
+- SSH server manager `[7]` — start/stop SSH on this device. Handles systemctl, launchctl, net start, Termux sshd.
+- Tool installer `[8]` — installs openssh, rsync, tar, 7-Zip via the right package manager for your OS
+- Share Linkx `[S]` — send `linkx.py` itself to any connected device
+
+</details>
 
 ---
 
-## Transfer Logic Reference
+## Platform Support
 
-| Situation | What Linkx does |
-|---|---|
-| Single file, new at destination | Direct scp |
-| Single file, exists at destination | rsync (delta) or overwrite / Copy folder |
-| Single file, any size | Never tarred |
-| Multiple files ≤ threshold | Direct scp each |
-| Multiple files > threshold | Bundle → Transfer.tar → scp → extract |
-| Folder | Tar if file count > threshold |
-| Compressed item (.7z) | Always counts as 1 file |
-| rsync missing | Offer install, or fallback to scp |
-| Windows remote | scp always (rsync to Windows unreliable) |
-
-**Default tar threshold: 10 files.**
+| Platform | Works | Port | Notes |
+|---|---|---|---|
+| Linux all distros | Full | 22 | |
+| Android / Termux | Full | 8022 | |
+| macOS | Full | 22 | |
+| Windows 10 / 11 | Full | 22 | OpenSSH built-in since 1809 |
+| Windows 7 / 8 | Partial | 22 | Manual Win32-OpenSSH install |
+| iOS | No | — | No SSH server without jailbreak |
 
 ---
 
-## Setup vs Pair — Which to Use
+## Installation
 
-| | Setup `[3]` | Pair `[P]` |
-|---|---|---|
-| Both devices need Linkx | ❌ No | ✅ Yes |
-| Password required | Once (yours → theirs) | Once each side |
-| Keys installed | One direction only | Both directions |
-| Other device appears in your list | ✅ | ✅ |
-| You appear in other device's list | ❌ | ✅ |
-| Other device can initiate transfer to you | ❌ | ✅ |
-| Best for | Remote servers, one-time setup | Daily use between personal devices |
+**Step 1 — Get the file**
 
----
-
-## Data Files
-
-Linkx stores everything alongside `linkx.py`:
-
-```
-Linkx/
-├── linkx.py                ← the entire application
-├── README.md
-├── LICENSE
-├── .linkx_hosts.json       ← known devices, IPs, MACs, OS info
-├── .linkx_keys.json        ← device ID → SSH key file mapping
-├── .linkx_vault.json       ← vault device list
-├── .linkx_quick.json       ← Quick Share queues and last-used paths
-└── .linkx_trusted.json     ← trusted device list (auto-transfer)
+```bash
+git clone https://github.com/Arch-Kiran/Linkx.git && cd Linkx
 ```
 
-SSH keys live in `~/.ssh/` named `ThisDevice_to_OtherDevice` (e.g. `V-15_to_Vivo`).
+Or download `linkx.py` directly. That is the entire app.
+
+**Step 2 — Python 3.8+**
+
+Already on Linux and macOS. On Windows: [python.org](https://python.org) — tick "Add to PATH".
+On Termux: `pkg install python`
+
+**Step 3 — SSH server on the target device**
+
+<details>
+<summary>Android / Termux</summary>
+
+```bash
+pkg install openssh && passwd && sshd
+```
+</details>
+
+<details>
+<summary>Linux — Debian / Ubuntu / Kali</summary>
+
+```bash
+sudo apt install openssh-server && sudo systemctl start ssh
+```
+</details>
+
+<details>
+<summary>Linux — Fedora / RHEL</summary>
+
+```bash
+sudo dnf install openssh-server && sudo systemctl start sshd
+```
+</details>
+
+<details>
+<summary>Linux — Arch</summary>
+
+```bash
+sudo pacman -S openssh && sudo systemctl start sshd
+```
+</details>
+
+<details>
+<summary>Windows 10 / 11</summary>
+
+```
+Settings → Apps → Optional Features → OpenSSH Server → Install
+```
+Then press `[7]` inside Linkx — handles service start and firewall rules automatically.
+</details>
+
+<details>
+<summary>macOS</summary>
+
+```
+System Settings → General → Sharing → Remote Login → ON
+```
+</details>
+
+**Step 4 — Run**
+
+```bash
+python3 linkx.py     # Linux / macOS / Termux
+python linkx.py      # Windows
+```
+
+First run opens the guide automatically.
 
 ---
 
 ## Configuration
 
-Edit these constants near the top of `linkx.py`:
+Top of `linkx.py`:
 
-| Constant | Default | What it controls |
+| Constant | Default | What it does |
 |---|---|---|
-| `W` | `64` | Menu width. 50=phone, 64=laptop, 80=wide monitor |
-| `TAR_THRESHOLD` | `10` | File count above which items are tar-bundled |
+| `W` | `64` | Menu width. 50 for phones, 80 for wide terminals. |
+| `TAR_THRESHOLD` | `10` | Bundle into tar above this file count |
 | `SCAN_TIMEOUT` | `1.2` | Seconds per host during scan |
-| `QS_POLL_INTERVAL` | `8` | Quick Share watcher interval (seconds) |
-| `SHOW_PASSWORD` | `False` | Debug: show SSH verbose output during setup |
+| `QS_POLL_INTERVAL` | `8` | Quick Share polling interval in seconds |
+| `SHOW_PASSWORD` | `False` | Debug: verbose SSH output during setup |
 
 ---
 
-## Version
+## Data Files
 
-```bash
-python3 linkx.py --version
-# Linkx v1.0.0.0
-# Author  : Kiran Pradeep Malik
-# Email   : sysarch.kiran@gmail.com
-# Launched: 2026-04-28
+Everything alongside `linkx.py`. Nothing hidden in system directories.
+
 ```
-During my testing as i only have a wifi 6 on laptop and wifi 5 on my phone so on 5ghz frequency with the hadware I have the maximum speed i got was ~39 MBps if you have a better wifi chip with better storage types read and write on your devices then the speed you will get will far greater than mine , because i have like 5 year old device at one side of file transfer the speed is limited to that hardware . But when i tested this between my Windows 11 as host and Kali linux in vmware as guest operating system with host only network so the transfer can be p2p without any middle man like router or hotspot devices it will be just Device A <-> Device B no middleman of router like host only works then the speeds reach upto 130 MBps, As my laptop has wifi 6 so it reached its theoretical limit but in real world it can reach upto that speed due to radio frequency travel and other frequency disturbances like having routher on home or other frequencies . I tested it within a room which have router then even on the device i have which were getting speed of 39 MBps i was getting only 6 MBps with router nearby turned on , so please be aware of the the surrounding . If you want to achieve higher speeds then keep your wifi card free as possible. And while using it if you encounter some errors then please inform me.  
+.linkx_hosts.json     known devices
+.linkx_keys.json      device ID to key file
+.linkx_vault.json     vault list
+.linkx_quick.json     Quick Share queues
+.linkx_trusted.json   trusted devices
+```
+
+SSH keys in `~/.ssh/` named `ThisDevice_to_OtherDevice`.
+
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT. Use it. Modify it. Ship it. No strings.
 
 ---
 
-## Author
+<div align="center">
 
-**Kiran Pradeep Malik**  
-📧 sysarch.kiran@gmail.com  
-📸 [@kiran_0807x](https://www.instagram.com/kiran_0807x?igsh=MWZtaTcyMGg5ODkzbw==)  
-🐙 [Arch-Kiran](https://github.com/Arch-Kiran)
+**Kiran Pradeep Malik**
+
+[📧 Email](mailto:sysarch.kiran@gmail.com) · [📸 Instagram](https://www.instagram.com/kiran_0807x) · [🐙 GitHub](https://github.com/Arch-Kiran)
+
+<br/>
 
 ---
+
+*Your files should go where you want them.*
+*At full speed.*
+*Without asking permission.*
+
+</div>
